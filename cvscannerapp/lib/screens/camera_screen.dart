@@ -18,13 +18,14 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
-  File? _imageFile;
-  String _extractedText = '';
+  List<File> _capturedImages = [];
+  List<String> _extractedTexts = [];
   bool _processing = false;
   String? _pdfPath;
   String? _docxPath;
   String _cameraStatus = 'Inicializando cámara...';
   bool _cameraInitialized = false;
+  int _currentImageIndex = -1;
   
   @override
   void initState() {
@@ -104,12 +105,14 @@ class _CameraScreenState extends State<CameraScreen> {
     
     try {
       final XFile file = await _controller!.takePicture();
+      File imageFile = File(file.path);
       
       setState(() {
-        _imageFile = File(file.path);
+        _capturedImages.add(imageFile);
+        _currentImageIndex = _capturedImages.length - 1;
       });
       
-      _processImage(File(file.path));
+      _processImage(imageFile);
     } catch (e) {
       print('Error al tomar foto: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,7 +124,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _processImage(File image) async {
     setState(() {
       _processing = true;
-      _extractedText = 'Procesando...';
+      _extractedTexts.add('Procesando...');
     });
     
     try {
@@ -132,14 +135,11 @@ class _CameraScreenState extends State<CameraScreen> {
       );
       
       setState(() {
-        _extractedText = text;
+        _extractedTexts[_currentImageIndex] = text;
       });
-      
-      // Enviar al servidor para procesar y crear PDF/DOCX
-      await _uploadImage(image, text);
     } catch (e) {
       setState(() {
-        _extractedText = 'Error al procesar: $e';
+        _extractedTexts[_currentImageIndex] = 'Error al procesar: $e';
       });
       print('Error OCR: $e');
     } finally {
@@ -149,19 +149,37 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
   
-  Future<void> _uploadImage(File image, String text) async {
+  Future<void> _uploadAllImages() async {
+    if (_capturedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No hay imágenes para procesar')),
+      );
+      return;
+    }
+    
+    setState(() {
+      _processing = true;
+    });
+    
     try {
+      // Combinar todos los textos extraídos
+      String combinedText = _extractedTexts.join('\n\n--- Nueva página ---\n\n');
+      
+      // Enviar la primera imagen al servidor (como representación)
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://10.0.2.2:3000/api/resumes/upload'), // Usa tu IP local o dominio
+        Uri.parse('http://10.0.2.2:3000/api/resumes/upload'),
       );
       
       request.files.add(
         await http.MultipartFile.fromPath(
           'image', 
-          image.path,
+          _capturedImages[0].path,
         ),
       );
+      
+      // Añadir el texto combinado como un campo adicional
+      request.fields['combinedText'] = combinedText;
       
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
@@ -177,20 +195,24 @@ class _CameraScreenState extends State<CameraScreen> {
           SnackBar(content: Text('Procesamiento exitoso')),
         );
       } else {
-        throw Exception('Error al subir imagen: ${response.statusCode}');
+        throw Exception('Error al subir imágenes: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error al subir imagen: $e');
+      print('Error al subir imágenes: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al subir imagen: $e')),
+        SnackBar(content: Text('Error al subir imágenes: $e')),
       );
+    } finally {
+      setState(() {
+        _processing = false;
+      });
     }
   }
   
   Future<void> _downloadFile(String url, String type) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:3000$url'), // Usa tu IP local o dominio
+        Uri.parse('http://10.0.2.2:3000$url'),
       );
       
       if (response.statusCode == 200) {
@@ -226,6 +248,50 @@ class _CameraScreenState extends State<CameraScreen> {
       OpenFile.open(path);
     }
   }
+  
+  void _resetCapture() {
+    setState(() {
+      _capturedImages = [];
+      _extractedTexts = [];
+      _currentImageIndex = -1;
+      _pdfPath = null;
+      _docxPath = null;
+    });
+  }
+  
+  Widget _buildCapturedImagesPreview() {
+    return Container(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _capturedImages.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _currentImageIndex = index;
+              });
+            },
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 5),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _currentImageIndex == index ? Colors.blue : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: Image.file(
+                _capturedImages[index],
+                width: 80,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,16 +317,31 @@ class _CameraScreenState extends State<CameraScreen> {
     }
     
     return Scaffold(
-      appBar: AppBar(title: Text('CV Scanner')),
+      appBar: AppBar(
+        title: Text('CV Scanner'),
+        actions: [
+          if (_capturedImages.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: _resetCapture,
+              tooltip: 'Reiniciar captura',
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
-            flex: _imageFile != null ? 1 : 2,
-            child: _imageFile != null
-                ? Image.file(_imageFile!)
+            flex: _currentImageIndex >= 0 ? 1 : 2,
+            child: _currentImageIndex >= 0
+                ? Image.file(_capturedImages[_currentImageIndex])
                 : CameraPreview(_controller!),
           ),
-          if (_imageFile != null)
+          if (_capturedImages.isNotEmpty) 
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: _buildCapturedImagesPreview(),
+            ),
+          if (_currentImageIndex >= 0)
             Expanded(
               flex: 2,
               child: SingleChildScrollView(
@@ -269,13 +350,13 @@ class _CameraScreenState extends State<CameraScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Texto extraído:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      'Texto extraído (Página ${_currentImageIndex + 1}/${_capturedImages.length}):',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     SizedBox(height: 8),
                     _processing
                         ? Center(child: CircularProgressIndicator())
-                        : Text(_extractedText),
+                        : Text(_extractedTexts[_currentImageIndex]),
                     SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -292,33 +373,33 @@ class _CameraScreenState extends State<CameraScreen> {
                           ),
                       ],
                     ),
-                    SizedBox(height: 16),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _imageFile = null;
-                            _extractedText = '';
-                            _pdfPath = null;
-                            _docxPath = null;
-                          });
-                        },
-                        child: Text('Tomar otra foto'),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
         ],
       ),
-      floatingActionButton: _imageFile == null
-          ? FloatingActionButton(
-              onPressed: _takePicture,
-              child: Icon(Icons.camera),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: BottomAppBar(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _takePicture,
+                icon: Icon(Icons.camera),
+                label: Text('Tomar foto'),
+              ),
+              if (_capturedImages.length > 0)
+                ElevatedButton.icon(
+                  onPressed: _uploadAllImages,
+                  icon: Icon(Icons.upload_file),
+                  label: Text('Procesar CV'),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
