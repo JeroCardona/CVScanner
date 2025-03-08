@@ -6,7 +6,8 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' show join;
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
-import 'package:http/http.dart' as http;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -22,7 +23,7 @@ class _CameraScreenState extends State<CameraScreen> {
   List<String> _extractedTexts = [];
   bool _processing = false;
   String? _pdfPath;
-  String? _docxPath;
+  String? _jsonPath;
   String _cameraStatus = 'Inicializando cámara...';
   bool _cameraInitialized = false;
   int _currentImageIndex = -1;
@@ -39,7 +40,6 @@ class _CameraScreenState extends State<CameraScreen> {
       Permission.storage,
     ].request();
     
-    // Verificar si los permisos fueron concedidos
     if (statuses[Permission.camera] != PermissionStatus.granted) {
       setState(() {
         _cameraStatus = 'Permiso de cámara denegado';
@@ -107,12 +107,17 @@ class _CameraScreenState extends State<CameraScreen> {
       final XFile file = await _controller!.takePicture();
       File imageFile = File(file.path);
       
+      // Guardar la imagen en una ubicación permanente
+      final String fileName = 'cvscanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String permanentPath = join(dirPath, fileName);
+      File permanentFile = await imageFile.copy(permanentPath);
+      
       setState(() {
-        _capturedImages.add(imageFile);
+        _capturedImages.add(permanentFile);
         _currentImageIndex = _capturedImages.length - 1;
       });
       
-      _processImage(imageFile);
+      _processImage(permanentFile);
     } catch (e) {
       print('Error al tomar foto: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +136,7 @@ class _CameraScreenState extends State<CameraScreen> {
       // Realizar OCR localmente
       String text = await FlutterTesseractOcr.extractText(
         image.path,
-        language: 'spa', // Idioma español, cambia según necesidades
+        language: 'spa', // Idioma español
       );
       
       setState(() {
@@ -149,7 +154,7 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
   
-  Future<void> _uploadAllImages() async {
+  Future<void> _processAndSaveDocuments() async {
     if (_capturedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('No hay imágenes para procesar')),
@@ -165,81 +170,79 @@ class _CameraScreenState extends State<CameraScreen> {
       // Combinar todos los textos extraídos
       String combinedText = _extractedTexts.join('\n\n--- Nueva página ---\n\n');
       
-      // Enviar la primera imagen al servidor (como representación)
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://10.0.2.2:3000/api/resumes/upload'),
-      );
+      // Crear directorio para guardar archivos
+      final Directory extDir = await getApplicationDocumentsDirectory();
+      final String dirPath = '${extDir.path}/CV';
+      await Directory(dirPath).create(recursive: true);
       
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'image', 
-          _capturedImages[0].path,
+      // Generar nombres de archivo con timestamp
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      // Crear y guardar archivo JSON
+      final jsonPath = join(dirPath, 'cv_data_$timestamp.json');
+      final Map<String, dynamic> jsonData = {
+        'fecha': DateTime.now().toIso8601String(),
+        'textoExtraido': _extractedTexts,
+        'imagenesPaths': _capturedImages.map((file) => file.path).toList(),
+        'textoCompleto': combinedText
+      };
+      
+      final File jsonFile = File(jsonPath);
+      await jsonFile.writeAsString(json.encode(jsonData));
+      
+      // Generar PDF localmente
+      final pdfPath = join(dirPath, 'cv_$timestamp.pdf');
+      final pdf = pw.Document();
+      
+      // Añadir texto extraído al PDF
+      pdf.addPage(
+        pw.MultiPage(
+          build: (pw.Context context) {
+            return [
+              pw.Header(level: 0, child: pw.Text('CV Escaneado')),
+              pw.Paragraph(text: combinedText),
+            ];
+          },
         ),
       );
       
-      // Añadir el texto combinado como un campo adicional
-      request.fields['combinedText'] = combinedText;
-      
-      var response = await request.send();
-      var responseData = await response.stream.bytesToString();
-      
-      if (response.statusCode == 200) {
-        var jsonResponse = json.decode(responseData);
+      // Añadir imágenes al PDF
+      for (int i = 0; i < _capturedImages.length; i++) {
+        final imageBytes = await _capturedImages[i].readAsBytes();
+        final image = pw.MemoryImage(imageBytes);
         
-        // Descargar PDF y DOCX
-        await _downloadFile(jsonResponse['resume']['pdfUrl'], 'pdf');
-        await _downloadFile(jsonResponse['resume']['docxUrl'], 'docx');
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Procesamiento exitoso')),
+        pdf.addPage(
+          pw.Page(
+            build: (pw.Context context) {
+              return pw.Center(
+                child: pw.Image(image),
+              );
+            },
+          ),
         );
-      } else {
-        throw Exception('Error al subir imágenes: ${response.statusCode}');
       }
-    } catch (e) {
-      print('Error al subir imágenes: $e');
+      
+      // Guardar PDF
+      final File pdfFile = File(pdfPath);
+      await pdfFile.writeAsBytes(await pdf.save());
+      
+      setState(() {
+        _pdfPath = pdfPath;
+        _jsonPath = jsonPath;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al subir imágenes: $e')),
+        SnackBar(content: Text('Archivos guardados correctamente')),
+      );
+    } catch (e) {
+      print('Error al procesar documentos: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al procesar documentos: $e')),
       );
     } finally {
       setState(() {
         _processing = false;
       });
-    }
-  }
-  
-  Future<void> _downloadFile(String url, String type) async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:3000$url'),
-      );
-      
-      if (response.statusCode == 200) {
-        final Directory extDir = await getApplicationDocumentsDirectory();
-        final String dirPath = '${extDir.path}/CV';
-        await Directory(dirPath).create(recursive: true);
-        final String filePath = join(dirPath, 'resume_${DateTime.now().millisecondsSinceEpoch}.$type');
-        
-        File file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-        
-        if (type == 'pdf') {
-          setState(() {
-            _pdfPath = filePath;
-          });
-        } else if (type == 'docx') {
-          setState(() {
-            _docxPath = filePath;
-          });
-        }
-        
-        print('Archivo $type guardado en: $filePath');
-      } else {
-        throw Exception('Error al descargar archivo $type: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error al descargar archivo $type: $e');
     }
   }
   
@@ -255,7 +258,7 @@ class _CameraScreenState extends State<CameraScreen> {
       _extractedTexts = [];
       _currentImageIndex = -1;
       _pdfPath = null;
-      _docxPath = null;
+      _jsonPath = null;
     });
   }
   
@@ -366,10 +369,10 @@ class _CameraScreenState extends State<CameraScreen> {
                             onPressed: () => _openFile(_pdfPath),
                             child: Text('Abrir PDF'),
                           ),
-                        if (_docxPath != null)
+                        if (_jsonPath != null)
                           ElevatedButton(
-                            onPressed: () => _openFile(_docxPath),
-                            child: Text('Abrir DOCX'),
+                            onPressed: () => _openFile(_jsonPath),
+                            child: Text('Abrir JSON'),
                           ),
                       ],
                     ),
@@ -392,9 +395,9 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
               if (_capturedImages.length > 0)
                 ElevatedButton.icon(
-                  onPressed: _uploadAllImages,
-                  icon: Icon(Icons.upload_file),
-                  label: Text('Procesar CV'),
+                  onPressed: _processAndSaveDocuments,
+                  icon: Icon(Icons.save),
+                  label: Text('Procesar y guardar'),
                 ),
             ],
           ),
