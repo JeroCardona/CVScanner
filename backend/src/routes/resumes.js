@@ -47,14 +47,19 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
     const imagePath = req.file.path;
     
-    // Realizar OCR con Tesseract
-    const result = await Tesseract.recognize(
-      imagePath,
-      'spa', // Idioma español, cambia según necesidades
-      { logger: info => console.log(info) }
-    );
-
-    const extractedText = result.data.text;
+    // Si se proporciona un texto combinado, usarlo en lugar de realizar OCR
+    let extractedText = '';
+    if (req.body.combinedText) {
+      extractedText = req.body.combinedText;
+    } else {
+      // Realizar OCR con Tesseract solo si no se proporciona texto combinado
+      const result = await Tesseract.recognize(
+        imagePath,
+        'spa', // Idioma español, cambia según necesidades
+        { logger: info => console.log(info) }
+      );
+      extractedText = result.data.text;
+    }
     
     // Generar PDF
     const pdfFilename = `${Date.now()}_resume.pdf`;
@@ -112,7 +117,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 });
 
 // Endpoint para obtener todos los CV
-router.get('/api/resumes', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const resumes = await Resume.find().sort({ createdAt: -1 });
     res.json({ resumes });
@@ -122,9 +127,9 @@ router.get('/api/resumes', async (req, res) => {
 });
 
 // Endpoint para obtener un CV específico
-router.get('/api/resumes/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const resume = await Resume.findById(req.id);
+    const resume = await Resume.findById(req.params.id);
     if (!resume) {
       return res.status(404).json({ message: 'CV no encontrado' });
     }
@@ -135,7 +140,7 @@ router.get('/api/resumes/:id', async (req, res) => {
 });
 
 // Endpoint para descargar PDF
-router.get('/api/resumes/:id/pdf', async (req, res) => {
+router.get('/:id/pdf', async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id);
     if (!resume) {
@@ -149,7 +154,7 @@ router.get('/api/resumes/:id/pdf', async (req, res) => {
 });
 
 // Endpoint para descargar DOCX
-router.get('/api/resumes/:id/docx', async (req, res) => {
+router.get('/:id/docx', async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id);
     if (!resume) {
@@ -161,4 +166,5 @@ router.get('/api/resumes/:id/docx', async (req, res) => {
     res.status(500).json({ message: 'Error al descargar el DOCX', error: error.message });
   }
 });
+
 module.exports = router;
