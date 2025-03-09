@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => LoginScreen(),
         '/home': (context) => HomeScreen(),
-        '/scanFile': (context) => Scaffold(body: Center(child: Text('Escanear desde archivoddddddd'))),
+        '/scanFile': (context) => Scaffold(body: Center(child: Text('Escanear desde archivod'))),
         '/scanCamera': (context) => CameraScreen(), 
         '/previousScans': (context) => Scaffold(body: Center(child: Text('Hojas de vida anteriores'))),
       },

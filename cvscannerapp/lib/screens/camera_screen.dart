@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' show join;
-import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
@@ -27,6 +27,7 @@ class _CameraScreenState extends State<CameraScreen> {
   String _cameraStatus = 'Inicializando cámara...';
   bool _cameraInitialized = false;
   int _currentImageIndex = -1;
+  final _textRecognizer = TextRecognizer();
   
   @override
   void initState() {
@@ -88,6 +89,7 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _textRecognizer.close();
     super.dispose();
   }
 
@@ -133,20 +135,20 @@ class _CameraScreenState extends State<CameraScreen> {
     });
     
     try {
-      // Realizar OCR localmente
-      String text = await FlutterTesseractOcr.extractText(
-        image.path,
-        language: 'spa', // Idioma español
-      );
+      // Usar ML Kit para reconocimiento de texto
+      final inputImage = InputImage.fromFilePath(image.path);
+      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      
+      String extractedText = recognizedText.text;
       
       setState(() {
-        _extractedTexts[_currentImageIndex] = text;
+        _extractedTexts[_currentImageIndex] = extractedText;
       });
     } catch (e) {
       setState(() {
         _extractedTexts[_currentImageIndex] = 'Error al procesar: $e';
       });
-      print('Error OCR: $e');
+      print('Error en reconocimiento de texto: $e');
     } finally {
       setState(() {
         _processing = false;
