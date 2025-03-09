@@ -436,11 +436,6 @@ class _CameraScreenState extends State<CameraScreen> {
                             onPressed: () => _openFile(_pdfPath),
                             child: Text('Abrir PDF'),
                           ),
-                        if (_jsonPath != null)
-                          ElevatedButton(
-                            onPressed: () => _openFile(_jsonPath),
-                            child: Text('Abrir JSON'),
-                          ),
                       ],
                     ),
                   ],
