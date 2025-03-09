@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:convert'; 
+import 'dart:convert';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,25 +29,23 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _cameraInitialized = false;
   int _currentImageIndex = -1;
   final _textRecognizer = TextRecognizer();
-  
+
   @override
   void initState() {
     super.initState();
     _requestPermissions().then((_) => _initializeCamera());
   }
-  
+
   Future<void> _requestPermissions() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.camera,
-      Permission.storage,
-    ].request();
-    
+    Map<Permission, PermissionStatus> statuses =
+        await [Permission.camera, Permission.storage].request();
+
     if (statuses[Permission.camera] != PermissionStatus.granted) {
       setState(() {
         _cameraStatus = 'Permiso de cámara denegado';
       });
     }
-    
+
     if (statuses[Permission.storage] != PermissionStatus.granted) {
       setState(() {
         _cameraStatus += '\nPermiso de almacenamiento denegado';
@@ -57,21 +56,18 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _initializeCamera() async {
     try {
       cameras = await availableCameras();
-      
+
       if (cameras == null || cameras!.isEmpty) {
         setState(() {
           _cameraStatus = 'No hay cámaras disponibles';
         });
         return;
       }
-      
-      _controller = CameraController(
-        cameras![0],
-        ResolutionPreset.high,
-      );
-      
+
+      _controller = CameraController(cameras![0], ResolutionPreset.high);
+
       await _controller!.initialize();
-      
+
       if (mounted) {
         setState(() {
           _cameraInitialized = true;
@@ -95,52 +91,55 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _takePicture() async {
     if (_controller == null || !_controller!.value.isInitialized) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('La cámara no está inicializada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('La cámara no está inicializada')));
       return;
     }
-    
+
     final Directory extDir = await getApplicationDocumentsDirectory();
     final String dirPath = '${extDir.path}/Pictures/cvscanner';
     await Directory(dirPath).create(recursive: true);
-    
+
     try {
       final XFile file = await _controller!.takePicture();
       File imageFile = File(file.path);
-      
+
       // Guardar la imagen en una ubicación permanente
-      final String fileName = 'cvscanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String fileName =
+          'cvscanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final String permanentPath = join(dirPath, fileName);
       File permanentFile = await imageFile.copy(permanentPath);
-      
+
       setState(() {
         _capturedImages.add(permanentFile);
         _currentImageIndex = _capturedImages.length - 1;
       });
-      
+
       _processImage(permanentFile);
     } catch (e) {
       print('Error al tomar foto: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al tomar foto: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al tomar foto: $e')));
     }
   }
-  
+
   Future<void> _processImage(File image) async {
     setState(() {
       _processing = true;
       _extractedTexts.add('Procesando...');
     });
-    
+
     try {
       // Usar ML Kit para reconocimiento de texto
       final inputImage = InputImage.fromFilePath(image.path);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
-      
+      final RecognizedText recognizedText = await _textRecognizer.processImage(
+        inputImage,
+      );
+
       String extractedText = recognizedText.text;
-      
+
       setState(() {
         _extractedTexts[_currentImageIndex] = extractedText;
       });
@@ -155,47 +154,110 @@ class _CameraScreenState extends State<CameraScreen> {
       });
     }
   }
-  
-  Future<void> _processAndSaveDocuments() async {
-    if (_capturedImages.isEmpty) {
+
+  Future<void> _sendToBackend() async {
+    if (_capturedImages.isEmpty || _extractedTexts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No hay imágenes para procesar')),
+        SnackBar(content: Text('No hay texto o imágenes para enviar')),
       );
       return;
     }
-    
+
     setState(() {
       _processing = true;
     });
-    
+
+    try {
+      // Combine all extracted texts
+      String combinedText = _extractedTexts.join(
+        '\n\n--- Nueva página ---\n\n',
+      );
+
+      // Create a multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://10.0.2.2:3000/upload'), // Use your server IP
+      );
+
+      // Add the image file
+      request.files.add(
+        await http.MultipartFile.fromPath('image', _capturedImages[0].path),
+      );
+
+      // Add the combined text
+      request.fields['combinedText'] = combinedText;
+
+      // Send the request
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        var jsonResponse = json.decode(responseData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Enviado al servidor: ${jsonResponse['message']}'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al enviar: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error al enviar al servidor: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar al servidor: $e')),
+      );
+    } finally {
+      setState(() {
+        _processing = false;
+      });
+    }
+  }
+
+  Future<void> _processAndSaveDocuments() async {
+    if (_capturedImages.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No hay imágenes para procesar')));
+      return;
+    }
+
+    setState(() {
+      _processing = true;
+    });
+
     try {
       // Combinar todos los textos extraídos
-      String combinedText = _extractedTexts.join('\n\n--- Nueva página ---\n\n');
-      
+      String combinedText = _extractedTexts.join(
+        '\n\n--- Nueva página ---\n\n',
+      );
+
       // Crear directorio para guardar archivos
       final Directory extDir = await getApplicationDocumentsDirectory();
       final String dirPath = '${extDir.path}/CV';
       await Directory(dirPath).create(recursive: true);
-      
+
       // Generar nombres de archivo con timestamp
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      
+
       // Crear y guardar archivo JSON
       final jsonPath = join(dirPath, 'cv_data_$timestamp.json');
       final Map<String, dynamic> jsonData = {
         'fecha': DateTime.now().toIso8601String(),
         'textoExtraido': _extractedTexts,
         'imagenesPaths': _capturedImages.map((file) => file.path).toList(),
-        'textoCompleto': combinedText
+        'textoCompleto': combinedText,
       };
-      
+
       final File jsonFile = File(jsonPath);
       await jsonFile.writeAsString(json.encode(jsonData));
-      
+
       // Generar PDF localmente
       final pdfPath = join(dirPath, 'cv_$timestamp.pdf');
       final pdf = pw.Document();
-      
+
       // Añadir texto extraído al PDF
       pdf.addPage(
         pw.MultiPage(
@@ -207,32 +269,30 @@ class _CameraScreenState extends State<CameraScreen> {
           },
         ),
       );
-      
+
       // Añadir imágenes al PDF
       for (int i = 0; i < _capturedImages.length; i++) {
         final imageBytes = await _capturedImages[i].readAsBytes();
         final image = pw.MemoryImage(imageBytes);
-        
+
         pdf.addPage(
           pw.Page(
             build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Image(image),
-              );
+              return pw.Center(child: pw.Image(image));
             },
           ),
         );
       }
-      
+
       // Guardar PDF
       final File pdfFile = File(pdfPath);
       await pdfFile.writeAsBytes(await pdf.save());
-      
+
       setState(() {
         _pdfPath = pdfPath;
         _jsonPath = jsonPath;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Archivos guardados correctamente')),
       );
@@ -247,13 +307,13 @@ class _CameraScreenState extends State<CameraScreen> {
       });
     }
   }
-  
+
   void _openFile(String? path) {
     if (path != null) {
       OpenFile.open(path);
     }
   }
-  
+
   void _resetCapture() {
     setState(() {
       _capturedImages = [];
@@ -263,7 +323,7 @@ class _CameraScreenState extends State<CameraScreen> {
       _jsonPath = null;
     });
   }
-  
+
   Widget _buildCapturedImagesPreview() {
     return Container(
       height: 100,
@@ -281,7 +341,8 @@ class _CameraScreenState extends State<CameraScreen> {
               margin: EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _currentImageIndex == index ? Colors.blue : Colors.grey,
+                  color:
+                      _currentImageIndex == index ? Colors.blue : Colors.grey,
                   width: 2,
                 ),
               ),
@@ -320,7 +381,7 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text('CV Scanner'),
@@ -337,11 +398,12 @@ class _CameraScreenState extends State<CameraScreen> {
         children: [
           Expanded(
             flex: _currentImageIndex >= 0 ? 1 : 2,
-            child: _currentImageIndex >= 0
-                ? Image.file(_capturedImages[_currentImageIndex])
-                : CameraPreview(_controller!),
+            child:
+                _currentImageIndex >= 0
+                    ? Image.file(_capturedImages[_currentImageIndex])
+                    : CameraPreview(_controller!),
           ),
-          if (_capturedImages.isNotEmpty) 
+          if (_capturedImages.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: _buildCapturedImagesPreview(),
@@ -356,7 +418,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   children: [
                     Text(
                       'Texto extraído (Página ${_currentImageIndex + 1}/${_capturedImages.length}):',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     SizedBox(height: 8),
                     _processing

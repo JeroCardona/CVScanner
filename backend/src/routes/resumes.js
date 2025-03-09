@@ -10,7 +10,6 @@ const { Document, Packer, Paragraph, TextRun } = docx;
 
 const Resume = require('../models/Resume');
 
-// Configurar almacenamiento para las imágenes
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     const uploadDir = path.join(__dirname, '../../uploads/images');
@@ -26,9 +25,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Configurar directorios para documentos generados
 const pdfDir = path.join(__dirname, '../../uploads/pdfs');
 const docxDir = path.join(__dirname, '../../uploads/docx');
+const textDir = path.join(__dirname, '../../uploads/text');
 
 if (!fs.existsSync(pdfDir)) {
   fs.mkdirSync(pdfDir, { recursive: true });

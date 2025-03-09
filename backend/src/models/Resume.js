@@ -6,6 +6,7 @@ const resumeSchema = new Schema({
   fileName: String,
   pdfUrl: String,
   docxUrl: String,
+  textUrl: String,
   createdAt: {
     type: Date,
     default: Date.now
