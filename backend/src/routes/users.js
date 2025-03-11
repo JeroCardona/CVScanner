@@ -6,11 +6,23 @@ const User = require('../models/User');
 // POST /api/users → Registrar nuevo usuario
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, password } = req.body;
+    const { firstName, lastName, phone, email, password, confirmPassword } = req.body;
+
+    console.log('Datos recibidos:', req.body); // Verificar qué datos llegan
 
     // Verificar que todos los campos estén presentes
-    if (!firstName || !lastName || !phone || !email || !password) {
+    if (!firstName || !lastName || !phone || !email || !password || !confirmPassword) {
       return res.status(400).json({ message: 'Por favor, completa todos los campos' });
+    }
+
+    // Validar que la contraseña tenga mínimo 8 caracteres
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
+    // Validar que las contraseñas coincidan
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Las contraseñas no coinciden' });
     }
 
     // Verificar si el usuario ya existe

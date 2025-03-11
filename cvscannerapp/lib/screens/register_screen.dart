@@ -31,7 +31,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _registerUser() async {
-    final url = Uri.parse('http://localhost:4000/api/users');
+    // Validar campos vacíos
+    if (_firstNameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      _showSnackBar('Por favor, completa todos los campos');
+      return;
+    }
+
+    // Validar longitud mínima de la contraseña
+    if (_passwordController.text.length < 8) {
+      _showSnackBar('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
+    // Validar que las contraseñas coincidan
+    if (_passwordController.text != _confirmPasswordController.text) {
+      _showSnackBar('Las contraseñas no coinciden');
+      return;
+    }
+
+    final url = Uri.parse('http://10.0.2.2:4000/api/users');
 
     final body = {
       "firstName": _firstNameController.text.trim(),
@@ -39,6 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       "phone": _phoneController.text.trim(),
       "email": _emailController.text.trim(),
       "password": _passwordController.text,
+      "confirmPassword": _confirmPasswordController.text,
     };
 
     final response = await http.post(
@@ -48,19 +72,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (response.statusCode == 201) {
-      _showSnackBar(context, 'Usuario registrado exitosamente', Colors.green);
+      _showSnackBar('Usuario registrado exitosamente', Colors.green);
       _navigateToHome(context);
     } else {
       final data = jsonDecode(response.body);
-      _showSnackBar(
-        context,
-        data['message'] ?? 'Error al registrar usuario',
-        Colors.red,
-      );
+      _showSnackBar(data['message'] ?? 'Error al registrar usuario');
     }
   }
 
-  void _showSnackBar(BuildContext context, String message, Color color) {
+  void _showSnackBar(String message, [Color color = Colors.red]) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
