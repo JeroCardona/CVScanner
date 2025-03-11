@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class CsvScannerScreen extends StatelessWidget {
+  const CsvScannerScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text('CsvScanner')),
       body: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -23,30 +14,23 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Bienvenido a CVScanner',
+              'Bienvenido a CsvScanner',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/fileScan');
+                Navigator.pushNamed(context, '/login'); // Navegar a Login
               },
-              child: Text('📂 Escanear hoja de vida desde archivos'),
+              child: Text('Login', style: TextStyle(fontSize: 18)),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/scanCamera');
+                Navigator.pushNamed(context, '/register'); // Navegar a Register
               },
-              child: Text('📸 Escanear hoja de vida desde cámara'),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/previousScans');
-              },
-              child: Text('📄 Ver hojas de vida anteriores'),
+              child: Text('Register', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),
