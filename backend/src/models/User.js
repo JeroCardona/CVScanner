@@ -1,5 +1,4 @@
 const { Schema, model } = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new Schema({
   firstName: {
@@ -21,20 +20,13 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: [true, 'La contraseña es obligatoria'],
+    minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
   },
   createdAt: {
     type: Date,
     default: Date.now,
-  }
-});
-
-// Middleware para cifrar la contraseña antes de guardarla
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  },
 });
 
 module.exports = model('User', userSchema);

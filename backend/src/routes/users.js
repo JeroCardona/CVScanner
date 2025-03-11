@@ -13,6 +13,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Por favor, completa todos los campos' });
     }
 
+    // Validar que la contraseña tenga mínimo 8 caracteres
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ email });
     if (existingUser) {
