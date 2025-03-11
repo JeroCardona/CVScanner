@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,24 +12,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _navigateToHome(BuildContext context) {
-    if (_emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      Navigator.of(context).push(_createRoute());
+  Future<void> _loginUser(BuildContext context) async {
+    final url = Uri.parse('http://localhost:4000/api/users/login');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "email": _emailController.text.trim(),
+        "password": _passwordController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Inicio de sesión exitoso')));
+      _navigateToHome(context);
     } else {
+      final data = jsonDecode(response.body);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, ingresa tus datos')),
+        SnackBar(content: Text(data['message'] ?? 'Error al iniciar sesión')),
       );
     }
+  }
+
+  void _navigateToHome(BuildContext context) {
+    Navigator.of(context).push(_createRoute());
   }
 
   Route _createRoute() {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => HomeScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
     );
   }
@@ -67,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _navigateToHome(context),
+              onPressed: () => _loginUser(context),
               child: Text('Login', style: TextStyle(fontSize: 18)),
             ),
           ],
