@@ -87,12 +87,12 @@ class _CameraScreenState extends State<CameraScreen> {
     _controller?.dispose();
     _textRecognizer.close();
     super.dispose();
-  }
+    }
 
-  Future<void> _takePicture() async {
+    Future<void> _takePicture() async {
     if (_controller == null || !_controller!.value.isInitialized) {
       ScaffoldMessenger.of(
-        context,
+      context,
       ).showSnackBar(SnackBar(content: Text('La cámara no está inicializada')));
       return;
     }
@@ -107,8 +107,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
       // Guardar la imagen en una ubicación permanente
       final String fileName =
-          'cvscanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        'cvscanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final String permanentPath = join(dirPath, fileName);
+
       File permanentFile = await imageFile.copy(permanentPath);
 
       setState(() {
@@ -259,16 +260,16 @@ class _CameraScreenState extends State<CameraScreen> {
       final pdf = pw.Document();
 
       // Añadir texto extraído al PDF
-      pdf.addPage(
-        pw.MultiPage(
-          build: (pw.Context context) {
-            return [
-              pw.Header(level: 0, child: pw.Text('CV Escaneado')),
-              pw.Paragraph(text: combinedText),
-            ];
-          },
-        ),
-      );
+       pdf.addPage(
+         pw.MultiPage(
+           build: (pw.Context context) {
+             return [
+               pw.Header(level: 0, child: pw.Text('CV Escaneado')),
+               pw.Paragraph(text: combinedText),
+             ];
+           },
+         ),
+       );
 
       // Añadir imágenes al PDF
       for (int i = 0; i < _capturedImages.length; i++) {
@@ -398,10 +399,9 @@ class _CameraScreenState extends State<CameraScreen> {
         children: [
           Expanded(
             flex: _currentImageIndex >= 0 ? 1 : 2,
-            child:
-                _currentImageIndex >= 0
-                    ? Image.file(_capturedImages[_currentImageIndex])
-                    : CameraPreview(_controller!),
+            child: _currentImageIndex >= 0
+                ? Image.file(_capturedImages[_currentImageIndex])
+                : CameraPreview(_controller!), // Mostrar la vista previa de la cámara
           ),
           if (_capturedImages.isNotEmpty)
             Padding(
@@ -431,10 +431,29 @@ class _CameraScreenState extends State<CameraScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
+                        ElevatedButton(
+                          onPressed: _takePicture,
+                          child: Text('Añadir otra foto'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _processAndSaveDocuments,
+                          child: Text('Generar PDF'),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
                         if (_pdfPath != null)
                           ElevatedButton(
                             onPressed: () => _openFile(_pdfPath),
                             child: Text('Abrir PDF'),
+                          ),
+                        if (_jsonPath != null)
+                          ElevatedButton(
+                            onPressed: () => _openFile(_jsonPath),
+                            child: Text('Abrir JSON'),
                           ),
                       ],
                     ),
@@ -451,9 +470,9 @@ class _CameraScreenState extends State<CameraScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton.icon(
-                onPressed: _takePicture,
+                onPressed: _takePicture, // Llamar a _takePicture en lugar de solo cambiar el índice
                 icon: Icon(Icons.camera),
-                label: Text('Tomar foto'),
+                label: Text('Tomar otra foto'),
               ),
               if (_capturedImages.length > 0)
                 ElevatedButton.icon(
