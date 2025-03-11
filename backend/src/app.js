@@ -14,11 +14,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Montar las rutas con prefijo
 const usersRoutes = require('./routes/users');
-app.use('/api/users', usersRoutes); // 👈 Añadido el prefijo /api/users
+app.use('/api/users', usersRoutes); // Añadido el prefijo /api/users
 
 try {
   const resumesRoutes = require('./routes/resumes');
-  app.use('/api/resumes', resumesRoutes); // 👈 Prefijo para las rutas de resumes
+  app.use('/api/resumes', resumesRoutes); // Prefijo para las rutas de resumes
 } catch (error) {
   console.error('No se pudo cargar el archivo de rutas resumes:', error.message);
 }
