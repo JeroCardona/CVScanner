@@ -4,38 +4,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Tesseract = require('tesseract.js');
-const PDFDocument = require('pdfkit');
-const docx = require('docx');
-const { Document, Packer, Paragraph, TextRun } = docx;
 
 const Resume = require('../models/Resume');
 
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../uploads/images');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function(req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
+// Configuramos multer para usar memoria en lugar de disco
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
-const pdfDir = path.join(__dirname, '../../uploads/pdfs');
-const docxDir = path.join(__dirname, '../../uploads/docx');
-const textDir = path.join(__dirname, '../../uploads/text');
-
-if (!fs.existsSync(pdfDir)) {
-  fs.mkdirSync(pdfDir, { recursive: true });
-}
-
-if (!fs.existsSync(docxDir)) {
-  fs.mkdirSync(docxDir, { recursive: true });
-}
 
 // Endpoint para procesar la imagen y extraer texto
 router.post('/upload', upload.single('image'), async (req, res) => {
@@ -44,58 +18,30 @@ router.post('/upload', upload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
     }
 
-    const imagePath = req.file.path;
+    // Convertir la imagen a base64 para guardarla en la base de datos
+    const imageBase64 = req.file.buffer.toString('base64');
+    const imageMimeType = req.file.mimetype;
+    const imageData = `data:${imageMimeType};base64,${imageBase64}`;
     
     // Si se proporciona un texto combinado, usarlo en lugar de realizar OCR
     let extractedText = '';
     if (req.body.combinedText) {
       extractedText = req.body.combinedText;
     } else {
-      // Realizar OCR con Tesseract solo si no se proporciona texto combinado
+      // Realizar OCR con Tesseract usando el buffer de la imagen
       const result = await Tesseract.recognize(
-        imagePath,
+        req.file.buffer,
         'spa', // Idioma español, cambia según necesidades
         { logger: info => console.log(info) }
       );
       extractedText = result.data.text;
     }
     
-    // Generar PDF
-    const pdfFilename = `${Date.now()}_resume.pdf`;
-    const pdfPath = path.join(pdfDir, pdfFilename);
-    
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(pdfPath));
-    doc.fontSize(12).text(extractedText);
-    doc.end();
-
-    // Generar DOCX
-    const docxFilename = `${Date.now()}_resume.docx`;
-    const docxPath = path.join(docxDir, docxFilename);
-    
-    const document = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            children: [
-              new TextRun(extractedText)
-            ]
-          })
-        ]
-      }]
-    });
-
-    const buffer = await Packer.toBuffer(document);
-    fs.writeFileSync(docxPath, buffer);
-
     // Guardar en la base de datos
     const resume = new Resume({
-      originalImage: `/uploads/images/${req.file.filename}`,
+      originalImage: imageData,
       extractedText,
-      fileName: req.file.originalname,
-      pdfUrl: `/uploads/pdfs/${pdfFilename}`,
-      docxUrl: `/uploads/docx/${docxFilename}`
+      fileName: req.file.originalname
     });
 
     await resume.save();
@@ -104,9 +50,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
       message: 'Procesamiento exitoso',
       resume: {
         id: resume._id,
-        extractedText,
-        pdfUrl: resume.pdfUrl,
-        docxUrl: resume.docxUrl
+        extractedText
       }
     });
   } catch (error) {
@@ -135,34 +79,6 @@ router.get('/:id', async (req, res) => {
     res.json({ resume });
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener el CV', error: error.message });
-  }
-});
-
-// Endpoint para descargar PDF
-router.get('/:id/pdf', async (req, res) => {
-  try {
-    const resume = await Resume.findById(req.params.id);
-    if (!resume) {
-      return res.status(404).json({ message: 'CV no encontrado' });
-    }
-    const pdfPath = path.join(__dirname, '../..', resume.pdfUrl);
-    res.download(pdfPath);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al descargar el PDF', error: error.message });
-  }
-});
-
-// Endpoint para descargar DOCX
-router.get('/:id/docx', async (req, res) => {
-  try {
-    const resume = await Resume.findById(req.params.id);
-    if (!resume) {
-      return res.status(404).json({ message: 'CV no encontrado' });
-    }
-    const docxPath = path.join(__dirname, '../..', resume.docxUrl);
-    res.download(docxPath);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al descargar el DOCX', error: error.message });
   }
 });
 

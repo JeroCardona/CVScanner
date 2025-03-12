@@ -156,66 +156,75 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _sendToBackend() async {
-    if (_capturedImages.isEmpty || _extractedTexts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No hay texto o imágenes para enviar')),
-      );
-      return;
-    }
-
-    setState(() {
-      _processing = true;
-    });
-
-    try {
-      // Combine all extracted texts
-      String combinedText = _extractedTexts.join(
-        '\n\n--- Nueva página ---\n\n',
-      );
-
-      // Create a multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://10.0.2.2:3000/upload'), // Use your server IP
-      );
-
-      // Add the image file
-      request.files.add(
-        await http.MultipartFile.fromPath('image', _capturedImages[0].path),
-      );
-
-      // Add the combined text
-      request.fields['combinedText'] = combinedText;
-
-      // Send the request
-      var response = await request.send();
-
-      if (response.statusCode == 200) {
-        var responseData = await response.stream.bytesToString();
-        var jsonResponse = json.decode(responseData);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Enviado al servidor: ${jsonResponse['message']}'),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al enviar: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      print('Error al enviar al servidor: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al enviar al servidor: $e')),
-      );
-    } finally {
-      setState(() {
-        _processing = false;
-      });
-    }
+Future<void> _sendToBackend() async {
+  if (_capturedImages.isEmpty || _extractedTexts.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No hay texto o imágenes para enviar')),
+    );
+    return;
   }
+
+  setState(() {
+    _processing = true;
+  });
+
+  try {
+    // Combine all extracted texts
+    String combinedText = _extractedTexts.join(
+      '\n\n--- Nueva página ---\n\n',
+    );
+
+    // Create a multipart request
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://192.168.1.9:4000/api/resumes/upload'), // Puerto 4000 como en el backend
+    );
+
+    // Add the image file
+    request.files.add(
+      await http.MultipartFile.fromPath('image', _capturedImages[0].path),
+    );
+
+    // Add the combined text
+    request.fields['combinedText'] = combinedText;
+
+    // Send the request
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      var responseData = await response.stream.bytesToString();
+      var jsonResponse = json.decode(responseData);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('CV guardado exitosamente en la base de datos'),
+        ),
+      );
+      
+      // Opcional: limpiar las imágenes capturadas después de un envío exitoso
+      setState(() {
+        _capturedImages = [];
+        _extractedTexts = [];
+        _currentImageIndex = -1;
+        _pdfPath = null;
+        _jsonPath = null;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar: ${response.statusCode}')),
+      );
+    }
+  } catch (e) {
+    print('Error al enviar al servidor: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al enviar al servidor: $e')),
+    );
+  } finally {
+    setState(() {
+      _processing = false;
+    });
+  }
+}
 
   Future<void> _processAndSaveDocuments() async {
     if (_capturedImages.isEmpty) {
@@ -436,7 +445,10 @@ class _CameraScreenState extends State<CameraScreen> {
                           child: Text('Añadir otra foto'),
                         ),
                         ElevatedButton(
-                          onPressed: _processAndSaveDocuments,
+                          onPressed: () async {
+                            await _processAndSaveDocuments(); 
+                           await _sendToBackend();           
+                          },
                           child: Text('Generar PDF'),
                         ),
                       ],
@@ -474,12 +486,6 @@ class _CameraScreenState extends State<CameraScreen> {
                 icon: Icon(Icons.camera),
                 label: Text('Tomar otra foto'),
               ),
-              if (_capturedImages.length > 0)
-                ElevatedButton.icon(
-                  onPressed: _processAndSaveDocuments,
-                  icon: Icon(Icons.save),
-                  label: Text('Procesar y guardar'),
-                ),
             ],
           ),
         ),

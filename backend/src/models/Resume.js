@@ -1,12 +1,15 @@
 const { Schema, model } = require('mongoose');
 
 const resumeSchema = new Schema({
-  originalImage: String,
-  extractedText: String,
+  originalImage: {
+    type: String,
+    required: true
+  },
+  extractedText: {
+    type: String,
+    required: true
+  },
   fileName: String,
-  pdfUrl: String,
-  docxUrl: String,
-  textUrl: String,
   createdAt: {
     type: Date,
     default: Date.now

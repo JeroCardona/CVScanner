@@ -14,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _loginUser(BuildContext context) async {
-    final url = Uri.parse('http://localhost:4000/api/users/login');
+    final url = Uri.parse('http://192.168.1.9:4000/api/users/login');
 
     final response = await http.post(
       url,
@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Route _createRoute() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => HomeScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) => ScanScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(opacity: animation, child: child);
       },

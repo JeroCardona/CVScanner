@@ -19,8 +19,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => CsvScannerScreen(),
-        '/home': (context) => HomeScreen(),
+        '/': (context) => HomeScreen(),
+        '/home': (context) => ScanScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/scanFile':

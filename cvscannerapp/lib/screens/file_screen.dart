@@ -9,12 +9,12 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
 
-class FileScanScreen extends StatefulWidget {
+class FileScreen extends StatefulWidget {
   @override
   _FileScanScreenState createState() => _FileScanScreenState();
 }
 
-class _FileScanScreenState extends State<FileScanScreen> {
+class _FileScanScreenState extends State<FileScreen> {
   List<File> _selectedImages = [];
   List<String> _extractedTexts = [];
   bool _processing = false;

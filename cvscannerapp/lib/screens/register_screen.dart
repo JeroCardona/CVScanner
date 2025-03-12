@@ -55,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final url = Uri.parse('http://10.0.2.2:4000/api/users');
+    final url = Uri.parse('http://192.168.1.9:4000/api/users');
 
     final body = {
       "firstName": _firstNameController.text.trim(),
