@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'home_screen.dart';
+import 'scan_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
