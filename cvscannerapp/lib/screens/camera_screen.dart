@@ -177,7 +177,7 @@ Future<void> _sendToBackend() async {
     // Create a multipart request
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://192.168.1.9:4000/api/resumes/upload'), // Puerto 4000 como en el backend
+      Uri.parse('http://192.168.1.4:4000/api/resumes/upload'), // Puerto 4000 como en el backend
     );
 
     // Add the image file

@@ -6,7 +6,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('CsvScanner')),
+      appBar: AppBar(title: Text('CVScanner')),
       body: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Bienvenido a CsvScanner',
+              'Bienvenido a CVScanner',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, '/login'); // Navegar a Login
               },
-              child: Text('Login', style: TextStyle(fontSize: 18)),
+              child: Text('Iniciar Sesión', style: TextStyle(fontSize: 18)),
             ),
             SizedBox(height: 20),
             ElevatedButton(
