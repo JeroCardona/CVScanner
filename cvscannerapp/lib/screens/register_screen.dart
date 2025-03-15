@@ -15,16 +15,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _documentController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
+    _documentController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -32,10 +33,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _registerUser() async {
-    // Validar campos vacíos
     if (_firstNameController.text.isEmpty ||
         _lastNameController.text.isEmpty ||
         _phoneController.text.isEmpty ||
+        _documentController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
@@ -43,13 +44,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Validar longitud mínima de la contraseña
     if (_passwordController.text.length < 8) {
       _showSnackBar('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
-    // Validar que las contraseñas coincidan
     if (_passwordController.text != _confirmPasswordController.text) {
       _showSnackBar('Las contraseñas no coinciden');
       return;
@@ -61,6 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       "firstName": _firstNameController.text.trim(),
       "lastName": _lastNameController.text.trim(),
       "phone": _phoneController.text.trim(),
+      "document": _documentController.text.trim(),
       "email": _emailController.text.trim(),
       "password": _passwordController.text,
       "confirmPassword": _confirmPasswordController.text,
@@ -124,54 +124,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(height: 20),
               TextField(
                 controller: _firstNameController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
               ),
               SizedBox(height: 10),
               TextField(
                 controller: _lastNameController,
-                decoration: InputDecoration(
-                  labelText: 'Apellido',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Apellido', border: OutlineInputBorder()),
               ),
               SizedBox(height: 10),
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Celular',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Celular', border: OutlineInputBorder()),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: _documentController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Número de documento', border: OutlineInputBorder()),
               ),
               SizedBox(height: 10),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Correo electrónico',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
               ),
               SizedBox(height: 10),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Contraseña', border: OutlineInputBorder()),
               ),
               SizedBox(height: 10),
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Confirmar contraseña',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: InputDecoration(labelText: 'Confirmar contraseña', border: OutlineInputBorder()),
               ),
               SizedBox(height: 20),
               ElevatedButton(
