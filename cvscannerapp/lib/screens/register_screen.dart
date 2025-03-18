@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'home_screen.dart';
 import 'scan_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -12,34 +11,20 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _documentController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
     _documentController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _registerUser() async {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _documentController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+    if (_documentController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
       _showSnackBar('Por favor, completa todos los campos');
       return;
     }
@@ -57,11 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final url = Uri.parse('http://192.168.1.4:4000/api/users');
 
     final body = {
-      "firstName": _firstNameController.text.trim(),
-      "lastName": _lastNameController.text.trim(),
-      "phone": _phoneController.text.trim(),
       "document": _documentController.text.trim(),
-      "email": _emailController.text.trim(),
       "password": _passwordController.text,
       "confirmPassword": _confirmPasswordController.text,
     };
@@ -108,67 +89,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Registro')),
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Registro',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/background.png"),
+                fit: BoxFit.cover,
               ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _firstNameController,
-                decoration: InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _lastNameController,
-                decoration: InputDecoration(labelText: 'Apellido', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(labelText: 'Celular', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _documentController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Número de documento', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'Contraseña', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _confirmPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'Confirmar contraseña', border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _registerUser,
-                child: Text('Registrar', style: TextStyle(fontSize: 18)),
-              ),
-            ],
+            ),
           ),
-        ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset("assets/images/logo_cvscanner.png", height: 50),
+                    SizedBox(height: 10),
+                    Text(
+                      "¡Regístrate!",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    Text("Por favor, ingresa tus datos para crear tu cuenta"),
+                    SizedBox(height: 20),
+                    TextField(
+                      controller: _documentController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Documento',
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Contraseña',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar contraseña',
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _registerUser,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[900], // Azul oscuro
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      ),
+                      child: Text(
+                        'Registrarse',
+                        style: TextStyle(fontSize: 18, color: Colors.white), // Letra blanca
+                      ),
+                    ),
+                    SizedBox(height: 30),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Image.asset("assets/images/logo_magneto.png", height: 30),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
