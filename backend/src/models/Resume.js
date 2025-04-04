@@ -1,3 +1,4 @@
+// backend/src/models/Resume.js
 const { Schema, model } = require('mongoose');
 
 const resumeSchema = new Schema({
@@ -10,6 +11,21 @@ const resumeSchema = new Schema({
     required: true
   },
   fileName: String,
+  analysis: {
+    overallScore: Number,
+    missingSections: [String],
+    unclearInformation: [{
+      section: String,
+      issue: String
+    }],
+    skillSuggestions: [String],
+    improvementSuggestions: [String],
+    strengths: [String],
+    analyzedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
