@@ -39,4 +39,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Error interno del servidor', error: err.message });
 });
 
+try {
+  const analysisRoutes = require('./routes/analysis');
+  app.use('/api/analysis', analysisRoutes);
+} catch (error) {
+  console.error('No se pudo cargar el archivo de rutas analysis:', error.message);
+}
+
 module.exports = app;

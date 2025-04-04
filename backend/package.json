@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.5.0",
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "docx": "^9.2.0",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "faker": "^5.5.3",
     "fs": "^0.0.1-security",
