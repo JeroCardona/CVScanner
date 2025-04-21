@@ -18,27 +18,31 @@ router.post('/upload', upload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
     }
 
-    // Convertir la imagen a base64 para guardarla en la base de datos
+    const { userId, combinedText } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'Falta el userId en la solicitud' });
+    }
+
+    // Convertir la imagen a base64
     const imageBase64 = req.file.buffer.toString('base64');
     const imageMimeType = req.file.mimetype;
     const imageData = `data:${imageMimeType};base64,${imageBase64}`;
     
-    // Si se proporciona un texto combinado, usarlo en lugar de realizar OCR
     let extractedText = '';
-    if (req.body.combinedText) {
-      extractedText = req.body.combinedText;
+    if (combinedText) {
+      extractedText = combinedText;
     } else {
-      // Realizar OCR con Tesseract usando el buffer de la imagen
       const result = await Tesseract.recognize(
         req.file.buffer,
-        'spa', // Idioma español, cambia según necesidades
+        'spa',
         { logger: info => console.log(info) }
       );
       extractedText = result.data.text;
     }
-    
-    // Guardar en la base de datos
+
     const resume = new Resume({
+      user: userId,
       originalImage: imageData,
       extractedText,
       fileName: req.file.originalname
@@ -58,6 +62,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Error al procesar la imagen', error: error.message });
   }
 });
+
 
 // Endpoint para obtener todos los CV
 router.get('/', async (req, res) => {

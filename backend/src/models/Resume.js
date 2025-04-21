@@ -1,7 +1,11 @@
-// backend/src/models/Resume.js
 const { Schema, model } = require('mongoose');
 
 const resumeSchema = new Schema({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   originalImage: {
     type: String,
     required: true
