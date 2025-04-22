@@ -301,6 +301,7 @@ Future<void> _sendToBackend() async {
       setState(() {
         _pdfPath = pdfPath;
         _jsonPath = jsonPath;
+        _currentImageIndex = _capturedImages.length - 1; // Mantener la vista actual
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -437,17 +438,26 @@ Future<void> _sendToBackend() async {
                         ? Center(child: CircularProgressIndicator())
                         : Text(_extractedTexts[_currentImageIndex]),
                     SizedBox(height: 16),
+                    // Modificar el botón de Generar PDF en el Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: _takePicture,
+                          onPressed: () {
+                            setState(() {
+                              _currentImageIndex = -1; // Mostrar la cámara
+                            });
+                            _takePicture();
+                          },
                           child: Text('Añadir otra foto'),
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            await _processAndSaveDocuments(); 
-                           await _sendToBackend();           
+                            await _processAndSaveDocuments();
+                            if (_pdfPath != null) {
+                              _openFile(_pdfPath); // Abrir el PDF automáticamente después de generarlo
+                            }
+                            await _sendToBackend();
                           },
                           child: Text('Generar PDF'),
                         ),
