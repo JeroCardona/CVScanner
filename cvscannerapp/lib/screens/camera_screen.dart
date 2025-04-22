@@ -11,6 +11,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CameraScreen extends StatefulWidget {
   @override
@@ -177,7 +178,7 @@ Future<void> _sendToBackend() async {
     // Create a multipart request
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://192.168.1.4:4000/api/resumes/upload'), // Puerto 4000 como en el backend
+      Uri.parse('http://${dotenv.env['ip']}/api/resumes/upload'), 
     );
 
     // Add the image file

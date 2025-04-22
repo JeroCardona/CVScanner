@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'scan_screen.dart'; // Asegúrate de importar la pantalla de destino
-import 'register_screen.dart'; // Importa la pantalla de registro
+import 'scan_screen.dart';
+import 'register_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -25,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
     print("Documento: ${_documentController.text}");
     print("Contraseña: ${_passwordController.text}");
 
-    final url = Uri.parse('http://192.168.1.4:4000/api/users/login');
+    final url = Uri.parse('http://${dotenv.env['ip']}/api/users/login');
 
     final response = await http.post(
       url,

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'scan_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -39,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final url = Uri.parse('http://192.168.1.4:4000/api/users');
+    final url = Uri.parse('http://${dotenv.env['ip']}/api/users');
 
     final body = {
       "document": _documentController.text.trim(),
