@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/file_screen.dart';   
-import 'screens/home_screen.dart';
+import 'screens/file_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/camera_screen.dart';
@@ -19,7 +18,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => HomeScreen(),
+        '/': (context) => LoginScreen(),
         '/home': (context) => ScanScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),

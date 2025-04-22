@@ -6,12 +6,12 @@ const User = require('../models/User');
 // POST /api/users → Registrar nuevo usuario
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, password, confirmPassword } = req.body;
+    const { document, password, confirmPassword } = req.body;
 
     console.log('Datos recibidos:', req.body); // Verificar qué datos llegan
 
     // Verificar que todos los campos estén presentes
-    if (!firstName || !lastName || !phone || !email || !password || !confirmPassword) {
+    if (!document || !password || !confirmPassword) {
       return res.status(400).json({ message: 'Por favor, completa todos los campos' });
     }
 
@@ -25,21 +25,20 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Las contraseñas no coinciden' });
     }
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email });
+    // Verificar si el documento ya está en uso
+    const existingUser = await User.findOne({ document });
     if (existingUser) {
-      return res.status(400).json({ message: 'El correo electrónico ya está en uso' });
+      return res.status(400).json({ message: 'El documento ya está en uso' });
     }
 
     // Hash de la contraseña antes de guardar
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear y guardar el usuario en MongoDB
-    const newUser = new User({ firstName, lastName, phone, email, password: hashedPassword });
+    const newUser = new User({ document, password: hashedPassword });
     await newUser.save();
 
     res.status(201).json({ message: 'Usuario registrado exitosamente' });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error del servidor', error: error.message });
@@ -48,28 +47,28 @@ router.post('/', async (req, res) => {
 
 // POST /api/users/login → Iniciar sesión de usuario
 router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  console.log("Datos recibidos en el backend:", req.body);
 
-    // Verificar que los campos no estén vacíos
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Por favor, completa todos los campos' });
+  try {
+    console.log("Datos recibidos en login:", req.body);
+
+    const { document, password } = req.body;
+
+    if (!document || !password) {
+      return res.status(400).json({ message: 'Por favor, ingresa tu documento y contraseña' });
     }
 
-    // Verificar si el usuario existe
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ document });
     if (!user) {
       return res.status(400).json({ message: 'Usuario no encontrado' });
     }
 
-    // Comparar la contraseña con bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Contraseña incorrecta' });
     }
 
     res.status(200).json({ message: 'Inicio de sesión exitoso' });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error del servidor', error: error.message });
