@@ -6,7 +6,7 @@ const resumeSchema = new Schema({
     ref: 'User',
     required: true
   },
-  originalImage: {
+  ownerDocument: {
     type: String,
     required: true
   },

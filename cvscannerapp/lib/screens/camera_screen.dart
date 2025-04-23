@@ -14,6 +14,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CameraScreen extends StatefulWidget {
+  final String? ownerDocument;
+
+  const CameraScreen({Key? key, this.ownerDocument}) : super(key: key);
+
   @override
   _CameraScreenState createState() => _CameraScreenState();
 }
@@ -165,47 +169,53 @@ Future<void> _sendToBackend() async {
     return;
   }
 
+  if (widget.ownerDocument == null || widget.ownerDocument!.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No se especificó la cédula del dueño del CV')),
+    );
+    return;
+  }
+
   setState(() {
     _processing = true;
   });
 
   try {
-    // Combine all extracted texts
+    // Combinar los textos extraídos
     String combinedText = _extractedTexts.join(
       '\n\n--- Nueva página ---\n\n',
     );
 
-    // Create a multipart request
+    // Crear solicitud multipart
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://${dotenv.env['ip']}/api/resumes/upload'), 
+      Uri.parse('http://${dotenv.env['ip']}/api/resumes/upload'),
     );
 
-    // Add the image file
+    // Agregar imagen principal (solo la primera)
     request.files.add(
       await http.MultipartFile.fromPath('image', _capturedImages[0].path),
     );
 
-    // Add the combined text
+    // Enviar la cédula del dueño y el texto
+    request.fields['ownerDocument'] = widget.ownerDocument!;
     request.fields['combinedText'] = combinedText;
 
-    // Send the request
+    // Enviar
     var response = await request.send();
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       var responseData = await response.stream.bytesToString();
       var jsonResponse = json.decode(responseData);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('CV guardado exitosamente en la base de datos'),
-        ),
+        SnackBar(content: Text('CV guardado exitosamente en la base de datos')),
       );
-      
-      // Opcional: limpiar las imágenes capturadas después de un envío exitoso
+
+      // Limpiar estado después de guardar
       setState(() {
-        _capturedImages = [];
-        _extractedTexts = [];
+        _capturedImages.clear();
+        _extractedTexts.clear();
         _currentImageIndex = -1;
         _pdfPath = null;
         _jsonPath = null;
@@ -226,6 +236,7 @@ Future<void> _sendToBackend() async {
     });
   }
 }
+
 
   Future<void> _processAndSaveDocuments() async {
     if (_capturedImages.isEmpty) {
