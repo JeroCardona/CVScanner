@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "cors": "^2.8.5",
+    "docx": "^9.5.0",
     "express": "^4.21.2",
     "faker": "^6.6.6",
     "mongoose": "^8.12.1",

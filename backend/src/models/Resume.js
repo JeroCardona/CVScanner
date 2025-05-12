@@ -6,7 +6,7 @@ const resumeSchema = new Schema({
     ref: 'User',
     required: true
   },
-  ownerDocument: {
+  originalImage: {
     type: String,
     required: true
   },
@@ -16,19 +16,44 @@ const resumeSchema = new Schema({
   },
   fileName: String,
   analysis: {
-    overallScore: Number,
-    missingSections: [String],
-    unclearInformation: [{
-      section: String,
-      issue: String
-    }],
-    skillSuggestions: [String],
-    improvementSuggestions: [String],
-    strengths: [String],
+    message: String,
     analyzedAt: {
       type: Date,
       default: Date.now
     }
+  },
+  formatted: {
+    fullName: String,
+    profession: String,
+    summary: String,
+    contact: {
+      address: String,
+      email: String,
+      website: String
+    },
+    expertise: [String],
+    keyAchievements: [String],
+    experience: [
+      {
+        jobTitle: String,
+        company: String,
+        startDate: String,
+        endDate: String,
+        responsibilities: [String]
+      }
+    ],
+    education: [
+      {
+        degree: String,
+        institution: String,
+        startDate: String,
+        endDate: String,
+        details: String
+      }
+    ],
+    languages: [String],
+    certifications: [String],
+    awards: [String]
   },
   createdAt: {
     type: Date,
