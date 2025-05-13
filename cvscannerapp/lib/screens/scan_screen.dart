@@ -36,7 +36,7 @@ class ScanScreen extends StatelessWidget {
                       SizedBox(height: 50),
                       GestureDetector(
                         onTap: () {
-                          _showDocumentInputDialog(context);
+                          Navigator.pushNamed(context, '/scanCamera');
                         },
                         child: Container(
                           width: double.infinity,
@@ -127,55 +127,6 @@ class ScanScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _showDocumentInputDialog(BuildContext context) {
-    String ownerDocument = '';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Ingrese la cédula del dueño del CV'),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'Número de cédula',
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) {
-              ownerDocument = value;
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Continuar'),
-              onPressed: () {
-                if (ownerDocument.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Por favor ingrese un número de cédula')),
-                  );
-                } else {
-                  Navigator.of(context).pop();
-                  Navigator.pushNamed(
-                    context,
-                    '/scanCamera',
-                    arguments: {'ownerDocument': ownerDocument},
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
