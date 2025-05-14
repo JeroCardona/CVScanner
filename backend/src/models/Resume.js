@@ -6,13 +6,17 @@ const resumeSchema = new Schema({
     ref: 'User',
     required: true
   },
-  originalImage: {
+  ownerDocument: {
     type: String,
     required: true
   },
+  originalImage: {
+    type: String,
+    required: false // opcional si no siempre se guarda
+  },
   extractedText: {
     type: String,
-    required: true
+    required: false // opcional si solo se guarda el estructurado
   },
   fileName: String,
   analysis: {

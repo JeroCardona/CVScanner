@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'scan_screen.dart';
 import 'register_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../globals.dart' as globals;
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -22,10 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginUser(BuildContext context) async {
-    print("Intentando iniciar sesión con:");
-    print("Documento: ${_documentController.text}");
-    print("Contraseña: ${_passwordController.text}");
-
     final url = Uri.parse('http://${dotenv.env['ip']}/api/users/login');
 
     final response = await http.post(
@@ -37,12 +34,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }),
     );
 
-    print("Respuesta del servidor: ${response.body}");
-
     if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Inicio de sesión exitoso')),
-      );
+      // Guardar documento del usuario logueado
+      globals.loggedInUserDocument = _documentController.text.trim();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Inicio de sesión exitoso')));
 
       Navigator.pushReplacement(
         context,
@@ -55,7 +53,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +87,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         '¡Inicia Sesión!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 5),
                       Text(
@@ -142,21 +142,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
+                          padding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 30,
+                          ),
                         ),
-                        child: Text('Iniciar Sesión', style: TextStyle(fontSize: 16, color: Colors.white)),
+                        child: Text(
+                          'Iniciar Sesión',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                       ),
                       SizedBox(height: 10),
                       TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => RegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => RegisterScreen(),
+                            ),
                           );
                         },
                         child: Text(
                           '¿No tienes una cuenta? Regístrate aquí',
-                          style: TextStyle(color: Colors.blue[900], fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.blue[900],
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       SizedBox(height: 40),

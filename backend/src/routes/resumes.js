@@ -7,12 +7,12 @@ const Tesseract = require('tesseract.js');
 
 const Resume = require('../models/Resume');
 const User = require('../models/User');
+const generateResumeDocx = require('../services/generateDocx');
+const AIAnalysisService = require('../services/aiAnalysis');
 
-// Configuramos multer para usar memoria en lugar de disco
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Endpoint para procesar la imagen y guardar el CV con user obtenido por ownerDocument
 router.post('/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -20,7 +20,6 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     }
 
     const { ownerDocument, combinedText } = req.body;
-
     if (!ownerDocument) {
       return res.status(400).json({ message: 'Falta el número de cédula (ownerDocument)' });
     }
@@ -30,15 +29,12 @@ router.post('/upload', upload.single('image'), async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado con esa cédula' });
     }
 
-    // Convertir la imagen a base64
     const imageBase64 = req.file.buffer.toString('base64');
     const imageMimeType = req.file.mimetype;
     const imageData = `data:${imageMimeType};base64,${imageBase64}`;
-    
-    let extractedText = '';
-    if (combinedText) {
-      extractedText = combinedText;
-    } else {
+
+    let extractedText = combinedText || '';
+    if (!combinedText) {
       const result = await Tesseract.recognize(
         req.file.buffer,
         'spa',
@@ -57,11 +53,21 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
     await resume.save();
 
+    const formatted = await AIAnalysisService.analyzeResume(extractedText);
+    const docxFileName = `cv_${ownerDocument}_${resume._id}.docx`;
+    const docxPath = path.resolve(__dirname, '../output', docxFileName);
+    generateResumeDocx(formatted, docxPath);
+
+    resume.formatted = formatted;
+    resume.generatedDocxPath = docxPath;
+    await resume.save();
+
     res.status(201).json({
-      message: 'CV guardado exitosamente',
+      message: 'CV guardado y generado exitosamente',
       resume: {
         id: resume._id,
-        extractedText
+        extractedText,
+        downloadUrl: `/api/resumes/download/${resume._id}`
       }
     });
   } catch (error) {
@@ -69,4 +75,19 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 });
+
+router.get('/download/:id', async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume || !resume.generatedDocxPath) {
+      return res.status(404).json({ message: 'Archivo no encontrado para este CV' });
+    }
+
+    res.download(resume.generatedDocxPath);
+  } catch (error) {
+    console.error('Error al descargar el documento:', error);
+    res.status(500).json({ message: 'Error interno al intentar descargar', error: error.message });
+  }
+});
+
 module.exports = router;
