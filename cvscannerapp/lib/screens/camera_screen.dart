@@ -1,4 +1,3 @@
-// camera_screen.dart (versión extendida con descarga de .docx)
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,7 +9,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:open_file/open_file.dart';
 
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({Key? key}) : super(key: key);
+  final String? ownerDocument;
+
+  const CameraScreen({Key? key, this.ownerDocument}) : super(key: key);
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -35,9 +36,9 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('No hay cámaras disponibles')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No hay cámaras disponibles')),
+        );
         return;
       }
 
@@ -98,7 +99,7 @@ class _CameraScreenState extends State<CameraScreen> {
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['combinedText'] = combinedText;
-      request.fields['ownerDocument'] = dotenv.env['cedula'] ?? 'sin_cedula';
+      request.fields['ownerDocument'] = widget.ownerDocument ?? 'sin_cedula';
 
       if (_capturedImages.isNotEmpty) {
         request.files.add(
@@ -121,30 +122,27 @@ class _CameraScreenState extends State<CameraScreen> {
 
         showDialog(
           context: context,
-          builder:
-              (_) => AlertDialog(
-                title: Text('CV generado'),
-                content: Text('Puedes descargar tu archivo generado.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cerrar'),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final launched = await OpenFile.open(downloadUrl);
-                      if (launched.type == ResultType.noAppToOpen) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('No se pudo abrir el archivo'),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text('Descargar .docx'),
-                  ),
-                ],
+          builder: (_) => AlertDialog(
+            title: Text('CV generado'),
+            content: Text('Puedes descargar tu archivo generado.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cerrar'),
               ),
+              TextButton(
+                onPressed: () async {
+                  final launched = await OpenFile.open(downloadUrl);
+                  if (launched.type == ResultType.noAppToOpen) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('No se pudo abrir el archivo')),
+                    );
+                  }
+                },
+                child: Text('Descargar .docx'),
+              ),
+            ],
+          ),
         );
       } else {
         throw Exception('Error: ${response.statusCode} - $responseBody');
@@ -177,9 +175,13 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Definir el color azul oscuro para todos los botones
+    final Color darkBlueColor = Color(0xFF0D47A1); // Azul oscuro
+    final Color textColor = Colors.white; // Texto blanco
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Escáner de CV'),
+        title: Text('Scanner de CV'),
         actions: [
           if (_capturedImages.isNotEmpty)
             IconButton(
@@ -189,81 +191,94 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
         ],
       ),
-      body:
-          _controller == null || !_controller!.value.isInitialized
-              ? Center(child: Text('Cargando cámara...'))
-              : Column(
-                children: [
-                  if (_currentImageIndex == -1)
-                    Expanded(child: CameraPreview(_controller!))
-                  else
-                    Expanded(
-                      child: Image.file(_capturedImages[_currentImageIndex]),
-                    ),
-                  if (_capturedImages.isNotEmpty)
-                    SizedBox(
-                      height: 90,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _capturedImages.length,
-                        itemBuilder:
-                            (context, index) => GestureDetector(
-                              onTap: () {
-                                setState(() => _currentImageIndex = index);
-                              },
-                              child: Container(
-                                margin: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color:
-                                        _currentImageIndex == index
-                                            ? Colors.blue
-                                            : Colors.grey,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Image.file(
-                                  _capturedImages[index],
-                                  width: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
+      body: _controller == null || !_controller!.value.isInitialized
+          ? Center(child: Text('Cargando cámara...'))
+          : Column(
+        children: [
+          if (_currentImageIndex == -1)
+            Expanded(child: CameraPreview(_controller!))
+          else
+            Expanded(
+              child: Image.file(_capturedImages[_currentImageIndex]),
+            ),
+          if (_capturedImages.isNotEmpty)
+            SizedBox(
+              height: 90,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _capturedImages.length,
+                itemBuilder: (context, index) => GestureDetector(
+                  onTap: () {
+                    setState(() => _currentImageIndex = index);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _currentImageIndex == index
+                            ? Colors.blue
+                            : Colors.grey,
+                        width: 2,
                       ),
                     ),
-                  if (_currentImageIndex != -1 && !_processing)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(8),
-                        child: Text(
-                          _extractedTexts[_currentImageIndex],
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ),
-                  if (_processing) LinearProgressIndicator(),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _takePictureAndProcess,
-                          icon: Icon(Icons.add_a_photo),
-                          label: Text('Añadir otra foto'),
-                        ),
-                        if (_capturedImages.isNotEmpty)
-                          ElevatedButton.icon(
-                            onPressed: _processAllAndSendToAI,
-                            icon: Icon(Icons.check),
-                            label: Text('Procesar CV completo'),
-                          ),
-                      ],
+                    child: Image.file(
+                      _capturedImages[index],
+                      width: 80,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                ],
+                ),
               ),
+            ),
+          if (_currentImageIndex != -1 && !_processing)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  _extractedTexts[_currentImageIndex],
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          if (_processing) LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              children: [
+                if (_capturedImages.isEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _takePictureAndProcess,
+                    icon: Icon(Icons.camera_alt, color: textColor),
+                    label: Text('Tomar foto', style: TextStyle(color: textColor)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkBlueColor,
+                    ),
+                  ),
+                if (_capturedImages.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _takePictureAndProcess,
+                    icon: Icon(Icons.add_photo_alternate, color: textColor),
+                    label: Text('Añadir otra foto', style: TextStyle(color: textColor)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkBlueColor,
+                    ),
+                  ),
+                if (_capturedImages.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _processAllAndSendToAI,
+                    icon: Icon(Icons.check, color: textColor),
+                    label: Text('Procesar CV completo', style: TextStyle(color: textColor)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkBlueColor,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

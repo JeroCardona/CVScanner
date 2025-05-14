@@ -54,51 +54,37 @@ class ScanScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/scanFile');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[300],
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                      // Tutorial Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '¿Cómo usar la aplicación?',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(width: 20),
-                              Image.asset(
-                                'assets/images/carpeta.png',
-                                height: 24,
-                              ),
-                              SizedBox(width: 15),
-                              Expanded(
-                                child: Text(
-                                  'Escanear desde archivo existente',
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            SizedBox(height: 10),
+                            Text(
+                              '1. Da click en el botón o símbolo de la cámara.',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '2. Se abrirá la cámara de tu celular. Alinea el documento y toma una foto.',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '3. Puedes añadir otra foto si lo deseas o enviar la foto directamente si ya terminaste.',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 30),
-                      _buildFileItem('Resume 1', '1/02/2025'),
-                      SizedBox(height: 15),
-                      _buildFileItem('Resume 2', '10/02/2025'),
-                      SizedBox(height: 15),
-                      _buildFileItem('Resume 3', '29/01/2025'),
-                      SizedBox(height: 15),
-                      _buildFileItem('Resume 4', '25/01/2025'),
                       SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -126,27 +112,6 @@ class ScanScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFileItem(String title, String date) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          Image.asset('assets/images/files.png', height: 24),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(date, style: TextStyle(color: Colors.black54)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
