@@ -11,8 +11,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CameraScreen extends StatefulWidget {
+  final String? ownerDocument;
+
+  const CameraScreen({Key? key, this.ownerDocument}) : super(key: key);
+
   @override
   _CameraScreenState createState() => _CameraScreenState();
 }
@@ -164,47 +169,53 @@ Future<void> _sendToBackend() async {
     return;
   }
 
+  if (widget.ownerDocument == null || widget.ownerDocument!.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No se especificó la cédula del dueño del CV')),
+    );
+    return;
+  }
+
   setState(() {
     _processing = true;
   });
 
   try {
-    // Combine all extracted texts
+    // Combinar los textos extraídos
     String combinedText = _extractedTexts.join(
       '\n\n--- Nueva página ---\n\n',
     );
 
-    // Create a multipart request
+    // Crear solicitud multipart
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://192.168.1.4:4000/api/resumes/upload'), // Puerto 4000 como en el backend
+      Uri.parse('http://${dotenv.env['ip']}/api/resumes/upload'),
     );
 
-    // Add the image file
+    // Agregar imagen principal (solo la primera)
     request.files.add(
       await http.MultipartFile.fromPath('image', _capturedImages[0].path),
     );
 
-    // Add the combined text
+    // Enviar la cédula del dueño y el texto
+    request.fields['ownerDocument'] = widget.ownerDocument!;
     request.fields['combinedText'] = combinedText;
 
-    // Send the request
+    // Enviar
     var response = await request.send();
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       var responseData = await response.stream.bytesToString();
       var jsonResponse = json.decode(responseData);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('CV guardado exitosamente en la base de datos'),
-        ),
+        SnackBar(content: Text('CV guardado exitosamente en la base de datos')),
       );
-      
-      // Opcional: limpiar las imágenes capturadas después de un envío exitoso
+
+      // Limpiar estado después de guardar
       setState(() {
-        _capturedImages = [];
-        _extractedTexts = [];
+        _capturedImages.clear();
+        _extractedTexts.clear();
         _currentImageIndex = -1;
         _pdfPath = null;
         _jsonPath = null;
@@ -225,6 +236,7 @@ Future<void> _sendToBackend() async {
     });
   }
 }
+
 
   Future<void> _processAndSaveDocuments() async {
     if (_capturedImages.isEmpty) {
@@ -301,6 +313,7 @@ Future<void> _sendToBackend() async {
       setState(() {
         _pdfPath = pdfPath;
         _jsonPath = jsonPath;
+        _currentImageIndex = _capturedImages.length - 1; // Mantener la vista actual
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -437,17 +450,26 @@ Future<void> _sendToBackend() async {
                         ? Center(child: CircularProgressIndicator())
                         : Text(_extractedTexts[_currentImageIndex]),
                     SizedBox(height: 16),
+                    // Modificar el botón de Generar PDF en el Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: _takePicture,
+                          onPressed: () {
+                            setState(() {
+                              _currentImageIndex = -1; // Mostrar la cámara
+                            });
+                            _takePicture();
+                          },
                           child: Text('Añadir otra foto'),
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            await _processAndSaveDocuments(); 
-                           await _sendToBackend();           
+                            await _processAndSaveDocuments();
+                            if (_pdfPath != null) {
+                              _openFile(_pdfPath); // Abrir el PDF automáticamente después de generarlo
+                            }
+                            await _sendToBackend();
                           },
                           child: Text('Generar PDF'),
                         ),

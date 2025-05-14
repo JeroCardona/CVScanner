@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
 
 class ScanScreen extends StatelessWidget {
+  const ScanScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,7 +36,7 @@ class ScanScreen extends StatelessWidget {
                       SizedBox(height: 50),
                       GestureDetector(
                         onTap: () {
-                          Navigator.pushNamed(context, '/scanCamera');
+                          _showDocumentInputDialog(context);
                         },
                         child: Container(
                           width: double.infinity,
@@ -70,12 +71,12 @@ class ScanScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              SizedBox(width: 20), // Desplaza la imagen hacia la derecha
+                              SizedBox(width: 20),
                               Image.asset(
                                 'assets/images/carpeta.png',
                                 height: 24,
                               ),
-                              SizedBox(width: 15), // Espaciado entre la imagen y el texto
+                              SizedBox(width: 15),
                               Expanded(
                                 child: Text(
                                   'Escanear desde archivo existente',
@@ -102,12 +103,10 @@ class ScanScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Logo Magneto en la parte inferior izquierda
                           Image.asset(
                             'assets/images/logo_magneto.png',
                             height: 40,
                           ),
-                          // Botón de salir en la parte inferior derecha
                           TextButton.icon(
                             onPressed: () {
                               Navigator.pushReplacementNamed(context, '/login');
@@ -131,6 +130,55 @@ class ScanScreen extends StatelessWidget {
     );
   }
 
+  void _showDocumentInputDialog(BuildContext context) {
+    String ownerDocument = '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Ingrese la cédula del dueño del CV'),
+          content: TextField(
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'Número de cédula',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              ownerDocument = value;
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Continuar'),
+              onPressed: () {
+                if (ownerDocument.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Por favor ingrese un número de cédula')),
+                  );
+                } else {
+                  Navigator.of(context).pop();
+                  Navigator.pushNamed(
+                    context,
+                    '/scanCamera',
+                    arguments: {'ownerDocument': ownerDocument},
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildFileItem(String title, String date) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5),
@@ -142,10 +190,7 @@ class ScanScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(date, style: TextStyle(color: Colors.black54)),
               ],
             ),
