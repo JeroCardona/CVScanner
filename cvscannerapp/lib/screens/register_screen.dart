@@ -171,7 +171,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(height: 30),
                     Align(
                       alignment: Alignment.bottomRight,
-                      child: Image.asset("assets/images/logo_magneto.png", height: 30),
+                      child: Image.asset("assets/images/logo_magneto.png", height: 50),
                     ),
                   ],
                 ),
