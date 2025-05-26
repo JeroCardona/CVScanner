@@ -1,0 +1,109 @@
+{
+  "fullName": "Juan Andrés Montoya Galeano",
+  "profession": "Ingenieria de Sistemas",
+  "summary": "Ingeniero de Sistemas con conocimientos en Python, C+, C, y Java. Experiencia en desarrollo web con frameworks como Django y Flask, manejo de estructuras, manejo y análisis de datos en MySQL, SOQLite y MongoDB. Experiencia en despliege en Google Cloud y AWS. Análisis de negocio con enfoque a la automatización de procesos. Interés marcado y proyección en el área relacionada al Machine Learning/Inteligencia Artificial.",
+  "contact": {
+    "address": "Medellin",
+    "email": "jamontoya2@eafit.edu.co",
+    "website": "https://www.linkedin.com/in/uan-montoya-649688260/"
+  },
+  "expertise": [
+    "Python",
+    "C+",
+    "C",
+    "Java",
+    "Django",
+    "Flask",
+    "MySQL",
+    "SOQLite",
+    "MongoDB",
+    "Google Cloud",
+    "AWS",
+    "Automatización de procesos",
+    "Machine Learning",
+    "Inteligencia Artificial"
+  ],
+  "keyAchievements": [],
+  "experience": [
+    {
+      "jobTitle": "Ingenieria de Sistema X",
+      "company": "Talent-Swap",
+      "startDate": "2022",
+      "endDate": "",
+      "responsibilities": [
+        "Concepto de plataforma para intercambio de empleados entre empresas.",
+        "Conocimiento adquirido: HTML Python, Django"
+      ]
+    },
+    {
+      "jobTitle": "Ingenieria de Sistema X",
+      "company": "Corpfinder",
+      "startDate": "2023",
+      "endDate": "",
+      "responsibilities": [
+        "Plataforma de recopilación de opiniones de empleados de distintas empresas.",
+        "Conocimiento adquirido: Webscraping, Python, HTML CSS, OpenAl API (NLP), DevOps"
+      ]
+    },
+    {
+      "jobTitle": "EAFIT",
+      "company": "TechNest",
+      "startDate": "2024",
+      "endDate": "",
+      "responsibilities": [
+        "Concepto de tienda online con sistema de reviews y calificación de productos.",
+        "Conocimiento adquirido: Docker, Google Cloud, HTML CSS Python"
+      ]
+    },
+    {
+      "jobTitle": "CVScanner",
+      "company": "En curso",
+      "startDate": "",
+      "endDate": "",
+      "responsibilities": [
+        "Aplicación móvil de escaneo de hojas de vida en puntos SuperGiros y conexión directa con Magneto.",
+        "Tecnologías: Dart, C+, JavaScript, Android Studio, OpenAI"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachiller Académico",
+      "institution": "Colegio Calasanz Medelin",
+      "startDate": "2008",
+      "endDate": "2020",
+      "details": ""
+    },
+    {
+      "degree": "Ingeniería de Sistemas",
+      "institution": "EAFIT",
+      "startDate": "2021",
+      "endDate": "en curso",
+      "details": ""
+    },
+    {
+      "degree": "Desarrollo Web con PHP",
+      "institution": "SENA",
+      "startDate": "2022",
+      "endDate": "",
+      "details": ""
+    },
+    {
+      "degree": "Curso Javascript",
+      "institution": "Udemy",
+      "startDate": "2022",
+      "endDate": "",
+      "details": ""
+    },
+    {
+      "degree": "Curso Bases de Datos y SQL",
+      "institution": "Udemy",
+      "startDate": "2022",
+      "endDate": "",
+      "details": ""
+    }
+  ],
+  "languages": [],
+  "certifications": [],
+  "awards": []
+}

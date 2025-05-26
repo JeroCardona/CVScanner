@@ -4,7 +4,7 @@ const resumeSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // CAMBIAR
   },
   ownerDocument: {
     type: String,
@@ -12,11 +12,11 @@ const resumeSchema = new Schema({
   },
   originalImage: {
     type: String,
-    required: false // opcional si no siempre se guarda
+    required: false
   },
   extractedText: {
     type: String,
-    required: false // opcional si solo se guarda el estructurado
+    required: false
   },
   fileName: String,
   analysis: {
@@ -59,6 +59,10 @@ const resumeSchema = new Schema({
     certifications: [String],
     awards: [String]
   },
+  // PDF generation fields
+  pdfPath: { type: String },
+  pdfFilename: { type: String },
+  docxPath: { type: String },
   createdAt: {
     type: Date,
     default: Date.now

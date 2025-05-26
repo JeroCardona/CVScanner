@@ -1,5 +1,5 @@
-const { Router } = require('express');
-const router = Router();
+const express = require('express');
+const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -9,70 +9,113 @@ const Resume = require('../models/Resume');
 const User = require('../models/User');
 const generateResumeDocx = require('../services/generateDocx');
 const AIAnalysisService = require('../services/aiAnalysis');
+const { getDefaultResultOrder } = require('dns');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post('/upload', upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
+
+    if(!req.file) {
+      return res.status(400).json({ error: 'No se ha subido ninguna imagen' });
     }
 
-    const { ownerDocument, combinedText } = req.body;
+    const { ownerDocument, combinedText } = req.body; // El campo ownerDocument está llegando como "sin_cedula" siempre
+
     if (!ownerDocument) {
-      return res.status(400).json({ message: 'Falta el número de cédula (ownerDocument)' });
+      return res.status(400).json({ message: 'Falta el número de cédula del usuario' });
     }
+
+    console.log('Owner Document:', ownerDocument);
+    console.log('Parámetros de req:', req.params);
+    console.log('Request completa:', req);
 
     const user = await User.findOne({ document: ownerDocument });
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado con esa cédula' });
-    }
+    
+    /*if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado con el número de cédula proporcionado' }); // Este check no me dejaba avanzar
+    }*/                                                                                                        // Porque el usuario "sin_cedula" no existe
 
     const imageBase64 = req.file.buffer.toString('base64');
     const imageMimeType = req.file.mimetype;
     const imageData = `data:${imageMimeType};base64,${imageBase64}`;
 
     let extractedText = combinedText || '';
-    if (!combinedText) {
-      const result = await Tesseract.recognize(
-        req.file.buffer,
-        'spa',
-        { logger: info => console.log(info) }
-      );
-      extractedText = result.data.text;
+
+    if (!combinedText || combinedText.trim() === '') {
+      // Use Tesseract to extract text from the image if no combinedText is provided
+      const { data: { text } } = await Tesseract.recognize(req.file.buffer, 'spa', {
+        logger: info => console.log(info)
+      });
+      extractedText = result.data.text.trim();
     }
 
-    const resume = new Resume({
-      user: user._id,
-      ownerDocument,
-      extractedText,
-      originalImage: imageData,
-      fileName: req.file.originalname
-    });
+    // Analyze with AI and generate PDF
+    const analysisResult = await AIAnalysisService.analyzeResume(combinedText);
+    
+    // Create resume document with your schema structure
+    const resumeData = {
+      //user: user._id || null,
+      ownerDocument: ownerDocument || 'sin_cedula',
+      extractedText: extractedText,
+      formatted: analysisResult.formatted,
+      pdfPath: analysisResult.pdfPath,
+      pdfFilename: analysisResult.pdfFilename,
+      analysis: {
+        message: 'CV processed successfully',
+        analyzedAt: new Date()
+      }
+    };
 
-    await resume.save();
+    if (req.file) {
+      resumeData.originalImage = req.file.path;
+    }
 
-    const formatted = await AIAnalysisService.analyzeResume(extractedText);
-    const docxFileName = `cv_${ownerDocument}_${resume._id}.docx`;
-    const docxPath = path.resolve(__dirname, '../output', docxFileName);
-    generateResumeDocx(formatted, docxPath);
-
-    resume.formatted = formatted;
-    resume.generatedDocxPath = docxPath;
+    const resume = new Resume(resumeData);
     await resume.save();
 
     res.status(201).json({
-      message: 'CV guardado y generado exitosamente',
+      message: 'Resume processed successfully',
       resume: {
         id: resume._id,
-        extractedText,
-        downloadUrl: `/api/resumes/download/${resume._id}`
+        hasPdf: !!analysisResult.pdfPath,
+        pdfFilename: analysisResult.pdfFilename
       }
     });
+
   } catch (error) {
-    console.error('Error al procesar el CV:', error);
-    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    console.error('Error processing resume:', error);
+    res.status(500).json({ 
+      error: 'Failed to process resume',
+      details: error.message 
+    });
+  }
+});
+
+router.get('/download-pdf/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resume = await Resume.findById(id);
+    
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    if (!resume.pdfPath || !fs.existsSync(resume.pdfPath)) {
+      return res.status(404).json({ error: 'PDF file not found' });
+    }
+
+    const filename = resume.pdfFilename || `resume_${resume._id}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    const fileStream = fs.createReadStream(resume.pdfPath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

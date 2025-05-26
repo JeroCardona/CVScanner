@@ -9,6 +9,9 @@ router.post('/', async (req, res) => {
     const { document, password, confirmPassword } = req.body;
 
     console.log('Datos recibidos:', req.body); // Verificar qué datos llegan
+    console.log('Documento:', document);
+    console.log('Request completa:', req);
+    console.log('Parámetros de req:', req.params);
 
     // Verificar que todos los campos estén presentes
     if (!document || !password || !confirmPassword) {
@@ -47,7 +50,10 @@ router.post('/', async (req, res) => {
 
 // POST /api/users/login → Iniciar sesión de usuario
 router.post('/login', async (req, res) => {
+  
   console.log("Datos recibidos en el backend:", req.body);
+  console.log('Request completa:', req);
+  console.log('Parámetros de req:', req.params);
 
   try {
     console.log("Datos recibidos en login:", req.body);
